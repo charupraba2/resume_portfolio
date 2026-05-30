@@ -75,6 +75,9 @@ resume_portfolio/
 - **Weather Prediction & Analysis**:
   - *Tech*: Python, Streamlit, Power BI, Pandas
   - *Details*: Historical data analytics, time-series prediction, and dashboard reporting.
+- **PredictaFlow**:
+  - *Tech*: Python, Scikit-learn, Web Interface, Machine Learning
+  - *Details*: A smart AI-powered prediction system that processes data smoothly and efficiently, delivering real-time machine learning predictions through a clean web interface.
 - **Employee Management System**:
   - *Tech*: Python, Django, SQLite, HTML5, CSS3, JS
   - *Details*: Role-based access control database dashboard.
