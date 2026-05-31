@@ -72,7 +72,7 @@ resume_portfolio/
 - **Fake Job Posting Detection**:
   - *Tech*: Python, Scikit-learn, Streamlit, NLP
   - *Details*: TF-IDF classification model for preventing job scams.
-- **Weather Prediction & Analysis**:
+- **Website Traffic Predictor**:
   - *Tech*: Python, Streamlit, Power BI, Pandas
   - *Details*: Historical data analytics, time-series prediction, and dashboard reporting.
 - **PredictaFlow**:
