@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initProjectFilters();
     initChatbot();
     initContactForm();
+    initGitHubStats();
 });
 
 /* ==========================================================================
@@ -188,10 +189,10 @@ function initChatbot() {
         `,
         experience: `
             <div class="chat-response-title">Work Experience</div>
-            Charuka has completed two key technical internships:
+            Charuka has completed and is actively working through internship roles focused on Python backend and ML integrations:
             <ul class="chat-response-list">
                 <li><strong>Python & Django Intern</strong> at <em>Gateway Software Solutions</em> (May - Jun 2025): Developed backend modules, configured relational database queries, and integrated styled frontends.</li>
-                <li><strong>Python Intern</strong> at <em>Greensoft Groups</em> (May - Jun 2024): Cleaned and structured 10,000+ data records using Pandas/NumPy, performed EDA, and automated reports saving 60% manual effort.</li>
+                <li><strong>Python Intern</strong> at <em>App-Angadi</em> (May 2024 - Present): Implemented backend APIs, led ML integrations and productionised ML prototypes (including TrendHunter AI), processed large datasets (10k+ records), and collaborated on deployments.</li>
             </ul>
         `,
         'smart-attendance': `
@@ -321,7 +322,7 @@ function initChatbot() {
         
         if (t.includes('hello') || t.includes('hi') || t.includes('hey')) return 'greeting';
         if (t.includes('skill') || t.includes('languages') || t.includes('expert') || t.includes('stack') || t.includes('tech')) return 'skills';
-        if (t.includes('experience') || t.includes('intern') || t.includes('work') || t.includes('job') || t.includes('greensoft') || t.includes('gateway')) return 'experience';
+        if (t.includes('experience') || t.includes('intern') || t.includes('work') || t.includes('job') || t.includes('app-angadi') || t.includes('gateway')) return 'experience';
         if (t.includes('attendance') || t.includes('face') || t.includes('cv') || t.includes('opencv') || t.includes('camera') || t.includes('vision')) return 'smart-attendance';
         if (t.includes('resume') || t.includes('cv') || t.includes('download') || t.includes('pdf')) return 'resume';
         if (t.includes('contact') || t.includes('email') || t.includes('linkedin') || t.includes('phone') || t.includes('reach') || t.includes('connect')) return 'contact';
@@ -354,12 +355,41 @@ function initContactForm() {
 
     if (!form || !statusMsg) return;
 
+    const origBtnText = submitBtn ? submitBtn.innerHTML : '';
+
+    // If the form is configured to use an external service (FormSubmit/Formspree), allow normal submit
+    const actionAttr = (form.getAttribute('action') || '').toLowerCase();
+    const usesThirdParty = actionAttr.includes('formsubmit.co') || actionAttr.includes('formspree.io');
+
+    if (usesThirdParty) {
+        // Provide lightweight UI feedback but let the browser perform the POST (we set target="_blank" in HTML)
+        form.addEventListener('submit', (e) => {
+            // show informational status and briefly disable button to prevent double submits
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<span>Opening contact form...</span>`;
+            }
+            statusMsg.className = 'form-message info';
+            statusMsg.style.display = 'block';
+            statusMsg.textContent = 'Opening contact form in a new tab. Complete the form to send the message.';
+
+            setTimeout(() => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origBtnText;
+                }
+            }, 3000);
+            // Do NOT call preventDefault — allow normal submission
+        });
+
+        return;
+    }
+
     form.addEventListener('submit', (e) => {
         e.preventDefault();
 
         // UI Feedback: Disable button and show loading state
-        submitBtn.disabled = true;
-        const origBtnText = submitBtn.innerHTML;
+        if (submitBtn) submitBtn.disabled = true;
         submitBtn.innerHTML = `
             <span>Sending...</span>
             <svg class="btn-icon animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
@@ -373,8 +403,8 @@ function initContactForm() {
         // Simulate API call to send email
         setTimeout(() => {
             // Restore button
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = origBtnText;
+            if (submitBtn) submitBtn.disabled = false;
+            if (submitBtn) submitBtn.innerHTML = origBtnText;
 
             // Success feedback
             statusMsg.className = 'form-message success';
@@ -391,3 +421,56 @@ function initContactForm() {
         }, 1500);
     });
 }
+
+/* ==========================================================================
+   GITHUB STATS FOR PROJECT CARDS
+   - Finds repository links in project cards and fetches public repo stats
+   ========================================================================== */
+function initGitHubStats() {
+    const repoLinks = document.querySelectorAll('.project-actions .btn-repo');
+    if (!repoLinks || repoLinks.length === 0) return;
+
+    repoLinks.forEach(link => {
+        const href = link.getAttribute('href');
+        if (!href) return;
+
+        const match = href.match(/github\.com\/([^\/]+)\/([^\/]+)(?:$|\/|\.git)/i);
+        if (!match) return;
+
+        const owner = match[1];
+        const repo = match[2].replace(/\.git$/i, '');
+
+        // Create the stats container and insert it after the project-actions
+        const statsEl = document.createElement('div');
+        statsEl.className = 'project-stats';
+        statsEl.innerHTML = `
+            <span class="stat-item">⭐ <strong>—</strong> Stars</span>
+            <span class="stat-item">🍴 <strong>—</strong> Forks</span>
+            <span class="stat-item">👀 <strong>—</strong> Watchers</span>
+        `;
+
+        // Append the stats element after the actions container
+        link.closest('.project-card').querySelector('.project-actions').after(statsEl);
+
+        // Fetch GitHub repo data (public API, rate-limited)
+        fetch(`https://api.github.com/repos/${owner}/${repo}`)
+            .then(resp => {
+                if (!resp.ok) throw new Error('GitHub API error');
+                return resp.json();
+            })
+            .then(data => {
+                const stars = data.stargazers_count ?? '—';
+                const forks = data.forks_count ?? '—';
+                const watchers = data.watchers_count ?? '—';
+
+                const items = statsEl.querySelectorAll('.stat-item strong');
+                if (items[0]) items[0].textContent = stars;
+                if (items[1]) items[1].textContent = forks;
+                if (items[2]) items[2].textContent = watchers;
+            })
+            .catch(() => {
+                // Leave placeholders if API call fails (no network or rate-limited)
+            });
+    });
+}
+
